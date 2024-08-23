@@ -4,6 +4,7 @@ from datetime import datetime
 import folium
 from streamlit_folium import folium_static
 from mapbox import Geocoder
+import os
 
 '''
 # Taxi Fare Interface
@@ -36,7 +37,8 @@ dropoff_address = st.text_input("Dropoff Location (Address)")
 passenger_count = st.number_input("Passenger Count", min_value=1, step=1, value=1)
 
 # Your Mapbox access token
-MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoibHVleHAiLCJhIjoiY20wNmwwbXd0MHRhZDJsc2d3MDJwdG9yZyJ9.IfLCjqwWkur-HQYETsb1bg'
+MAPBOX_ACCESS_TOKEN = os.environ.get("MAPBOX_PK")
+
 
 geocoder = Geocoder(access_token=MAPBOX_ACCESS_TOKEN)
 
