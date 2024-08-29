@@ -6,10 +6,6 @@ from streamlit_folium import folium_static
 from mapbox import Geocoder
 import os
 
-'''
-# Taxi Fare Interface
-'''
-
 st.markdown('''
 Welcome to the Taxi Fare Prediction App!
 ''')
