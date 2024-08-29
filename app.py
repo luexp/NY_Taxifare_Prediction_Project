@@ -17,9 +17,6 @@ Welcome to the Taxi Fare Prediction App!
 '''
 ## Enter Your Ride Details:
 '''
-'''
-## Enter Your Ride Details:
-'''
 # Initialize coordinates with default values
 pickup_longitude = -73.9798156
 pickup_latitude = 40.7614327
@@ -28,11 +25,30 @@ dropoff_latitude = 40.8030000
 
 pickup_datetime = st.text_input("Date and Time (YYYY-MM-DD HH:MM)", value=datetime.now().strftime("%Y-%m-%d %H:%M"))
 
-# Get pickup location from user
-pickup_address = st.text_input("Pickup Location (Address)")
+# Add this function after the imports
+def get_address_suggestions(query):
+    url = f"https://api.mapbox.com/geocoding/v5/mapbox.places/{query}.json"
+    params = {
+        "access_token": os.environ.get("MAPBOX_PK"),
+        "autocomplete": True,
+        "types": "address"
+    }
+    response = requests.get(url, params=params)
+    if response.status_code == 200:
+        suggestions = [feature['place_name'] for feature in response.json()['features']]
+        return suggestions
+    return []
 
-# Get dropoff location from user
-dropoff_address = st.text_input("Dropoff Location (Address)")
+# Replace the pickup and dropoff address input sections with these:
+pickup_address = st.text_input("Pickup Location (Address)", key="pickup")
+if pickup_address:
+    pickup_suggestions = get_address_suggestions(pickup_address)
+    pickup_address = st.selectbox("Select pickup address", options=pickup_suggestions, key="pickup_select")
+
+dropoff_address = st.text_input("Dropoff Location (Address)", key="dropoff")
+if dropoff_address:
+    dropoff_suggestions = get_address_suggestions(dropoff_address)
+    dropoff_address = st.selectbox("Select dropoff address", options=dropoff_suggestions, key="dropoff_select")
 
 passenger_count = st.number_input("Passenger Count", min_value=1, step=1, value=1)
 
@@ -87,21 +103,51 @@ if response.status_code == 200:
 else:
     st.error('Error fetching prediction. Please check your inputs or the API endpoint.')
 
+# Add this function after the other functions
+def get_route(start_lon, start_lat, end_lon, end_lat):
+    url = f"https://api.mapbox.com/directions/v5/mapbox/driving/{start_lon},{start_lat};{end_lon},{end_lat}"
+    params = {
+        "access_token": os.environ.get("MAPBOX_PK"),
+        "geometries": "geojson",
+        "overview": "full"
+    }
+    response = requests.get(url, params=params)
+    if response.status_code == 200:
+        route = response.json()['routes'][0]['geometry']['coordinates']
+        return route
+    return None
 
-# 5. Display Map
+# Replace the map creation part with this
 if response.status_code == 200:
-    # ... (Display prediction) ...
+    # Get the route
+    route = get_route(pickup_longitude, pickup_latitude, dropoff_longitude, dropoff_latitude)
 
-    # Create a Folium map centered on the pickup location
-    m = folium.Map(location=[pickup_latitude, pickup_longitude], zoom_start=13)
+    if route:
+        # Create a Folium map centered on the pickup location
+        m = folium.Map(location=[pickup_latitude, pickup_longitude], zoom_start=12)
 
-    # Add markers for pickup and dropoff locations using COORDINATES
-    folium.Marker([pickup_latitude, pickup_longitude],
-                  popup="Pickup Location",
-                  icon=folium.Icon(color='blue')).add_to(m)
-    folium.Marker([dropoff_latitude, dropoff_longitude],
-                  popup="Dropoff Location",
-                  icon=folium.Icon(color='red')).add_to(m)
+        # Add markers for pickup and dropoff locations
+        folium.Marker([pickup_latitude, pickup_longitude],
+                      popup="Pickup Location",
+                      icon=folium.Icon(color='blue')).add_to(m)
+        folium.Marker([dropoff_latitude, dropoff_latitude],
+                      popup="Dropoff Location",
+                      icon=folium.Icon(color='red')).add_to(m)
 
-    # Display the map
-    folium_static(m)
+        # Add the route line
+        folium.PolyLine(
+            locations=[[coord[1], coord[0]] for coord in route],  # Note the coordinate order swap
+            color="red",
+            weight=2,
+            opacity=0.8
+        ).add_to(m)
+
+        # Adjust the map view to show the entire route
+        sw = min(coord[1] for coord in route), min(coord[0] for coord in route)
+        ne = max(coord[1] for coord in route), max(coord[0] for coord in route)
+        m.fit_bounds([sw, ne])
+
+        # Display the map
+        folium_static(m)
+    else:
+        st.error("Unable to fetch route. Please check your inputs and try again.")
