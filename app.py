@@ -25,7 +25,7 @@ pickup_datetime = st.text_input("Date and Time (YYYY-MM-DD HH:MM)", value=dateti
 def get_address_suggestions(query):
     url = f"https://api.mapbox.com/geocoding/v5/mapbox.places/{query}.json"
     params = {
-        "access_token": os.environ.get("MAPBOX_PK"),
+        "access_token": st.secrets["mapbox"]["MAPBOX_PK"],
         "autocomplete": True,
         "types": "address"
     }
@@ -48,8 +48,19 @@ if dropoff_address:
 
 passenger_count = st.number_input("Passenger Count", min_value=1, step=1, value=1)
 
+try:
+    # Try to get the token from Streamlit secrets
+    MAPBOX_ACCESS_TOKEN = st.secrets["mapbox"]["MAPBOX_PK"]
+except FileNotFoundError:
+    # If running locally and secrets.toml is not set up, fall back to environment variable
+    MAPBOX_ACCESS_TOKEN = os.environ.get("MAPBOX_PK")
+
+if not MAPBOX_ACCESS_TOKEN:
+    st.error("Mapbox access token not found. Please set it up in secrets.toml or as an environment variable.")
+    st.stop()
+
 # Your Mapbox access token
-MAPBOX_ACCESS_TOKEN = os.environ.get("MAPBOX_PK")
+MAPBOX_ACCESS_TOKEN = st.secrets["mapbox"]["MAPBOX_PK"]
 
 
 geocoder = Geocoder(access_token=MAPBOX_ACCESS_TOKEN)
@@ -103,7 +114,7 @@ else:
 def get_route(start_lon, start_lat, end_lon, end_lat):
     url = f"https://api.mapbox.com/directions/v5/mapbox/driving/{start_lon},{start_lat};{end_lon},{end_lat}"
     params = {
-        "access_token": os.environ.get("MAPBOX_PK"),
+        "access_token": st.secrets["mapbox"]["MAPBOX_PK"],
         "geometries": "geojson",
         "overview": "full"
     }
