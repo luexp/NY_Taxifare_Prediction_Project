@@ -1,6 +1,8 @@
 This is my first end-to-end ML project as part of Le Wagon's bootcamp. 
 
-A taxi fare prediction tool for the city of New York. This repo only contains the front-end part deployed using Streamlit.
+A taxi fare prediction tool for the city of New York. 
+
+This repo only contains the front-end part deployed using Streamlit.
 
 Enter pickup and dropoff location and you will know your fare.
 
